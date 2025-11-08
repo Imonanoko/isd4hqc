@@ -41,3 +41,11 @@ fn mul() {
     let s = u.mul(&v);
     assert_eq!(s.ones_indices(),vec![2,6]);
 }
+
+#[test]
+fn truncate() {
+    let src = HqcGf2::from_indices(130, &[0, 1, 2, 63, 64, 65,66,100,127]);
+    let got = src.truncate(66);
+    assert_eq!(got.ones_indices(),vec![0, 1, 2, 63, 64, 65]);
+    assert!(!got.get(66) && !got.get(100) && !got.get(127));
+}

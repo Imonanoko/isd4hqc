@@ -176,7 +176,7 @@ impl HqcGf2 {
         }
         acc
     }
-    // use un debug
+    // use in debug
     pub fn ones_indices(&self) -> Vec<usize> {
         let mut out = Vec::new();
         for (wi, mut w) in self.words.iter().copied().enumerate() {
@@ -190,6 +190,23 @@ impl HqcGf2 {
             }
         }
         out
+    }
+    pub fn truncate(&self, n_prime: usize) -> Self {
+        assert!(n_prime <= self.n, "truncate length exceeds self.n");
+        let m = Self::word_len(n_prime);
+        let mut words = vec![0u64; m];
+        let full_words = n_prime / 64;
+        if full_words > 0 {
+            words[..full_words].copy_from_slice(&self.words[..full_words]);
+        }
+        let rem = n_prime & 63;
+        if rem > 0 {
+            let mask = (1u64 << rem) - 1;
+            words[full_words] = self.words[full_words] & mask;
+        }
+        let mut obj = Self { n: n_prime, words };
+        obj.mask_tail();
+        obj
     }
 }
 impl Gf2 for HqcGf2 {
