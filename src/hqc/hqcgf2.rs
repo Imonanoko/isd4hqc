@@ -1,4 +1,4 @@
-use crate::gf2::{Gf2, Gf2Construct};
+use crate::gf::{Gf2, Gf2Construct};
 use std::fmt;
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct HqcGf2 {
