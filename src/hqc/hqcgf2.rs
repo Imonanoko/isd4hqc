@@ -16,7 +16,7 @@ impl HqcGf2 {
         if r == 0 { !0u64 } else { (1u64 << r) - 1 }
     }
     #[inline]
-    fn mask_tail(&mut self) {
+    pub fn mask_tail(&mut self) {
         if let Some(last) = self.words.last_mut() {
             *last &= Self::last_mask(self.n);
         }

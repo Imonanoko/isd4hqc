@@ -1,5 +1,5 @@
 mod domain;
-pub(crate) mod xof;
+pub mod xof;
 mod sha3;
 pub(crate) mod kdf;
 
