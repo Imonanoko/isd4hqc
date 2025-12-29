@@ -4,7 +4,7 @@ use super::hash::{G, H, I, J};
 use super::params::HqcPkeParams;
 use super::pke;
 use super::types::{
-    ct_eq, CiphKem, CiphPke, DkKem, EkKem, Salt16, Seed32, SharedKey32, TypesError,
+    ct_eq, CiphKem, DkKem, EkKem, Salt16, Seed32, SharedKey32, TypesError,
 };
 
 #[derive(Clone, Copy, Debug)]
@@ -59,9 +59,9 @@ pub fn encaps_with<P: HqcPkeParams>(
     // (K, theta) = G(H(ek) || m || salt)
     let g_out = G(&[&h_ek, m, &salt]);
 
-    let mut K = [0u8; 32];
+    let mut k = [0u8; 32];
     let mut theta = [0u8; 32];
-    K.copy_from_slice(&g_out[..32]);
+    k.copy_from_slice(&g_out[..32]);
     theta.copy_from_slice(&g_out[32..64]);
 
     // cPKE = PKE.Encrypt(ek, m, theta)
@@ -70,7 +70,7 @@ pub fn encaps_with<P: HqcPkeParams>(
     // cKEM = (cPKE, salt)
     let c_kem = CiphKem::<P> { c_pke, salt };
 
-    Ok((K, c_kem))
+    Ok((k, c_kem))
 }
 
 /// Deterministic decapsulation (always returns 32B key; uses rejection key on failure).
@@ -111,9 +111,9 @@ pub fn decaps<P: HqcPkeParams>(dk: &DkKem<P>, c: &CiphKem<P>) -> SharedKey32 {
     // (K', theta') = G(H(ek) || m' || salt)
     let g_out = G(&[&h_ek, &m_prime, &c.salt]);
 
-    let mut Kp = [0u8; 32];
+    let mut k_p = [0u8; 32];
     let mut theta_p = [0u8; 32];
-    Kp.copy_from_slice(&g_out[..32]);
+    k_p.copy_from_slice(&g_out[..32]);
     theta_p.copy_from_slice(&g_out[32..64]);
 
     // c' = PKE.Encrypt(ek, m', theta')
@@ -127,5 +127,5 @@ pub fn decaps<P: HqcPkeParams>(dk: &DkKem<P>, c: &CiphKem<P>) -> SharedKey32 {
         return k_bar;
     }
 
-    Kp
+    k_p
 }

@@ -1,4 +1,4 @@
-use super::hash::{H, I};
+use super::hash::I;
 use super::hash::xof::Shake256Xof;
 use super::hqcgf2::HqcGf2;
 use super::params::HqcPkeParams;
@@ -7,7 +7,6 @@ use super::types::{CiphPke, DkPke, EkPke, Seed32, TypesError};
 
 use super::concatenated_codes::reed_solomon::ReedSolomon;
 use super::concatenated_codes::RmrsCode;
-use super::concatenated_codes::RmrsError;
 
 /// Build RMRS codec for a given parameter set P.
 fn rmrs_codec<P: HqcPkeParams>() -> RmrsCode {
