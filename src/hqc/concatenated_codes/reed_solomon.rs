@@ -18,12 +18,12 @@ pub const HQC_G3_POLY: &[u8] = &[
     87, 123, 150, 71, 148, 63, 240, 91, 124, 121, 200, 39, 49, 167, 49,
 ];
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum RsError {
     Uncorrectable,
     CorrectionFailed,
 }
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ReedSolomon {
     pub n: usize,
     pub k: usize,

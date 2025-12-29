@@ -91,7 +91,6 @@ impl HqcGf2 {
         let whole = s / 64;
         let rem = s & 63;
 
-        // step1: word-rotate right
         let mut tmp = vec![0u64; m];
         for i in 0..m {
             tmp[i] = self.words[(i + whole) % m];
@@ -103,7 +102,6 @@ impl HqcGf2 {
             return;
         }
 
-        // step2: bit-rotate right (一般 word)
         let lshift = 64 - rem;
         for i in 0..(m.saturating_sub(1)) {
             let cur = tmp[i];
@@ -111,11 +109,9 @@ impl HqcGf2 {
             out.words[i] = (cur >> rem) | (next << lshift);
         }
 
-        // step2': 最後一個 word 的低 r 位需要特判
         let r = n & 63;
         let last = m - 1;
         if r == 0 {
-            // 最後一個 word 也是滿 64 位，走一般公式
             let cur = tmp[last];
             let next = tmp[0];
             out.words[last] = (cur >> rem) | (next << lshift);
@@ -128,7 +124,6 @@ impl HqcGf2 {
                 let b = (next & ((1u64 << rem) - 1)) << (r - rem);
                 (a | b) & mask_r
             } else {
-                // rem > r
                 (next >> (rem - r)) & mask_r
             };
         }
