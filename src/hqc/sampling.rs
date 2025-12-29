@@ -1,4 +1,4 @@
-use super::{HqcGf2, Shake256Xof};
+use super::{HqcGf2, hash::xof::Shake256Xof};
 
 pub(crate) fn sample_vect(n: usize, xof: &Shake256Xof) -> HqcGf2 {
     let n_bytes = (n + 7) / 8;

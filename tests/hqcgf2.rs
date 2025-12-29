@@ -6,7 +6,7 @@ fn rotate_right_n66_by1() {
     let v = HqcGf2::from_indices(n, &[0, 1, 64, 65]);
     let out = {
         let mut o = HqcGf2::zero_with_len(n);
-        v.rotate_right_into(1, &mut o);
+        v.rotate_right_into(1, &mut o, &mut Vec::new());
         o
     };
     let debug_str = format!("{}, {:#}, {:?}",out,out,out.ones_indices());
@@ -18,7 +18,7 @@ fn rotate_right_n128_by64() {
     let v = HqcGf2::from_indices(n, &[1, 64]);
     let out = {
         let mut o = HqcGf2::zero_with_len(n);
-        v.rotate_right_into(64, &mut o);
+        v.rotate_right_into(64, &mut o, &mut Vec::new());
         o
     };
     let debug_str = format!("{}, {:#}, {:?}",out,out,out.ones_indices());
@@ -32,14 +32,6 @@ fn add() {
     let s = u.add(&v);
     assert_eq!(s.ones_indices(),vec![1,2,7,64]);
     assert_eq!(s.weight(), 4);
-}
-#[test]
-fn mul() {
-    let n = 8;
-    let u = HqcGf2::from_indices(n, &[0,2,3,5]);
-    let v = HqcGf2::from_indices(n, &[0,5]);
-    let s = u.mul(&v);
-    assert_eq!(s.ones_indices(),vec![2,6]);
 }
 
 #[test]

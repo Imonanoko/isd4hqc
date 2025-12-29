@@ -64,14 +64,12 @@ impl RmrsCode {
             });
         }
 
-        // Step 1: RM decode each block -> RS symbols
         let mut rs_recv = vec![0u8; self.rs.n];
         for i in 0..self.rs.n {
             let block = &cw[i * block_bytes..(i + 1) * block_bytes];
             rs_recv[i] = self.rm.decode_symbol(block)?;
         }
 
-        // Step 2: RS decode -> message bytes
         Ok(self.rs.decode(&rs_recv)?)
     }
 }
