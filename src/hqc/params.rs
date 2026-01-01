@@ -20,7 +20,6 @@ pub trait HqcPkeParams: Clone + Copy + 'static {
     const RS_GEN_POLY: &'static [u8];
 }
 
-
 #[derive(Clone, Copy, Debug)]
 pub struct Hqc1Params;
 impl HqcPkeParams for Hqc1Params {
