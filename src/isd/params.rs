@@ -116,4 +116,7 @@ impl HqcKeyRecoveryInstance {
     pub fn get_public_key(&self) -> (&HqcGf2, &HqcGf2) {
         (&self.h, &self.s)
     }
+    pub fn get_secret_key(&self) -> (&HqcGf2, &HqcGf2) {
+        (&self.y, &self.x)
+    }
 }
