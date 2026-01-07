@@ -6,8 +6,8 @@ use crate::hqc::types::Seed32;
 use super::error::{HqcParamError, HqcKeygenError};
 
 pub struct HqcExperimentParams {
-    n: usize,
-    w: usize,
+    pub n: usize,
+    pub w: usize,
 }
 /// hqc-1 n/w = 267.7
 /// hqc-3 n/w = 358.5
@@ -61,9 +61,9 @@ impl HqcExperimentParams {
     pub fn hqc_5() -> Self {
         Self::new(57637, 131)
     }
-    fn keygen(&self, seed_pke: Seed32) -> Result<HqcKeygenParams, HqcKeygenError> {
+    pub fn keygen(&self, seed_pke: Seed32) -> Result<HqcKeyRecoveryInstance, HqcKeygenError> {
         self.validate()?;
-        let i_out = I(&[&seed_pke]);
+        let i_out = I(&[seed_pke.as_slice()]);
         let mut seed_dk = [0u8; 32];
         let mut seed_ek = [0u8; 32];
         seed_dk.copy_from_slice(&i_out[..32]);
@@ -76,32 +76,32 @@ impl HqcExperimentParams {
         let hy = h.mul_bitpacked(&y);
         let mut s_vec = x.clone();
         s_vec.xor_in_place(&hy);
-        let out = HqcKeygenParams { y, x, h, s: s_vec };
+        let out = HqcKeyRecoveryInstance { y, x, h, s: s_vec };
         out.verify(self)?;
         Ok(out)
     }
 }
-struct HqcKeygenParams {
+pub struct HqcKeyRecoveryInstance {
     y: HqcGf2,
     x: HqcGf2,
     h: HqcGf2,
     s: HqcGf2,
 }
 
-impl HqcKeygenParams {
-    pub fn verify(&self, p: &HqcExperimentParams) -> Result<(), HqcKeygenError> {
+impl HqcKeyRecoveryInstance {
+    fn verify(&self, p: &HqcExperimentParams) -> Result<(), HqcKeygenError> {
         for (name, v) in [("x", &self.x), ("y", &self.y), ("h", &self.h), ("s", &self.s)] {
             if v.n != p.n {
-                return Err(HqcKeygenError::WrongLength { expected: p.n, got: v.n });
+                return Err(HqcKeygenError::WrongLength { name: name.to_string(), expected: p.n, got: v.n });
             }
         }
         let wx = self.x.weight() as usize;
         let wy = self.y.weight() as usize;
         if wx != p.w {
-            return Err(HqcKeygenError::WrongWeight { expected: p.w, got: wx });
+            return Err(HqcKeygenError::WrongWeight { name: "x".to_string(), expected: p.w, got: wx });
         }
         if wy != p.w {
-            return Err(HqcKeygenError::WrongWeight { expected: p.w, got: wy });
+            return Err(HqcKeygenError::WrongWeight { name: "y".to_string(), expected: p.w, got: wy });
         }
         let hy = self.h.mul_bitpacked(&self.y);
         let mut rhs = self.x.clone();
@@ -112,5 +112,8 @@ impl HqcKeygenParams {
         }
 
         Ok(())
+    }
+    pub fn get_public_key(&self) -> (&HqcGf2, &HqcGf2) {
+        (&self.h, &self.s)
     }
 }

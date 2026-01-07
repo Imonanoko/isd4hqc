@@ -16,10 +16,18 @@ pub enum HqcParamError {
 pub enum HqcKeygenError {
     #[error("params invalid: {0}")]
     InvalidParams(#[from] HqcParamError),
-    #[error("generated vector has wrong length (expected {expected}, got {got})")]
-    WrongLength { expected: usize, got: usize },
-    #[error("generated vector has wrong weight (expected {expected}, got {got})")]
-    WrongWeight { expected: usize, got: usize },
+    #[error("generated {name} vector has wrong length (expected {expected}, got {got})")]
+    WrongLength { name: String, expected: usize, got: usize },
+    #[error("generated {name} vector has wrong weight (expected {expected}, got {got})")]
+    WrongWeight { name: String, expected: usize, got: usize },
     #[error("key equation check failed: s != x ⊕ h·y")]
     EquationFailed,
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum AttackError {
+    #[error("attack failed")]
+    Failed,
+    #[error("attack aborted: {0}")]
+    Aborted(String),
 }

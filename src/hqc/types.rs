@@ -4,7 +4,6 @@ use core::marker::PhantomData;
 
 use super::params::HqcPkeParams;
 
-/// Fixed-size primitives (spec-defined)
 pub type Seed32 = [u8; 32];
 pub type Salt16 = [u8; 16];
 pub type SharedKey32 = [u8; 32];
@@ -15,12 +14,10 @@ pub enum TypesError {
     InvalidFormat(&'static str),
 }
 
-/// HQC-PKE encryption key: ekPKE = (seedPKE.ek, s)
-/// Layout (bytes): seed_ek (32) || s (ceil(n/8))
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct EkPke<P: HqcPkeParams> {
     pub seed_ek: Seed32,
-    pub s: Vec<u8>, // len = P::N_BYTES
+    pub s: Vec<u8>,
     _pd: PhantomData<P>,
 }
 
@@ -64,7 +61,6 @@ impl<P: HqcPkeParams> EkPke<P> {
     }
 }
 
-/// HQC-PKE decryption key: dkPKE = seedPKE.dk (32 bytes)
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct DkPke<P: HqcPkeParams> {
     pub seed_dk: Seed32,
@@ -100,12 +96,10 @@ impl<P: HqcPkeParams> DkPke<P> {
     }
 }
 
-/// HQC-PKE ciphertext: cPKE = (u, v)
-/// Layout (bytes): u (ceil(n/8)) || v (ceil(n1*n2/8))
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CiphPke<P: HqcPkeParams> {
-    pub u: Vec<u8>, // len = P::N_BYTES
-    pub v: Vec<u8>, // len = P::N1N2_BYTES
+    pub u: Vec<u8>,
+    pub v: Vec<u8>,
     _pd: PhantomData<P>,
 }
 
@@ -154,11 +148,8 @@ impl<P: HqcPkeParams> CiphPke<P> {
     }
 }
 
-/// HQC-KEM ekKEM is the same as ekPKE per spec.
 pub type EkKem<P> = EkPke<P>;
 
-/// HQC-KEM ciphertext: cKEM = (cPKE, salt)
-/// Layout: cPKE (P::C_PKE_BYTES) || salt (16)
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CiphKem<P: HqcPkeParams> {
     pub c_pke: CiphPke<P>,
@@ -191,15 +182,12 @@ impl<P: HqcPkeParams> CiphKem<P> {
     }
 }
 
-/// HQC-KEM decapsulation key supports:
-/// - default format: (ekKEM, dkPKE, sigma, seedKEM)
-/// - compressed: (seedKEM)
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum DkKem<P: HqcPkeParams> {
     Full {
         ek: EkKem<P>,
         dk_pke: DkPke<P>,
-        sigma: Vec<u8>, // len = P::K_BYTES
+        sigma: Vec<u8>,
         seed_kem: Seed32,
     },
     Compressed {
@@ -232,8 +220,6 @@ impl<P: HqcPkeParams> DkKem<P> {
         Self::Compressed { seed_kem }
     }
 
-    /// Full dkKEM bytes length per spec:
-    /// |dkKEM| = |ekKEM| + |dkPKE| + |sigma| + |seedKEM|
     pub fn len_bytes_full() -> usize {
         EkKem::<P>::len_bytes() + DkPke::<P>::len_bytes() + P::K_BYTES + P::SEED_BYTES
     }
@@ -273,8 +259,6 @@ impl<P: HqcPkeParams> DkKem<P> {
     }
 }
 
-/// Constant-time-ish equality for ciphertext checks (avoid early-exit branching).
-/// (Not a perfect side-channel proof, but better than == for this layer.)
 pub fn ct_eq(a: &[u8], b: &[u8]) -> bool {
     if a.len() != b.len() {
         return false;
