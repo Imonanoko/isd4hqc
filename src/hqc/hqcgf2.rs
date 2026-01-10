@@ -8,7 +8,7 @@ pub struct HqcGf2 {
 impl HqcGf2 {
     #[inline]
     pub fn word_len(n: usize) -> usize {
-        (n + 63) / 64
+        (n + 63) >> 6
     }
     #[inline]
     fn last_mask(n: usize) -> u64 {
@@ -29,7 +29,7 @@ impl HqcGf2 {
             if i >= n {
                 continue;
             }
-            let w = i / 64;
+            let w = i >> 6; // i / 64
             let b = i & 63; // i % 64
             words[w] ^= 1u64 << b;
         }
@@ -49,7 +49,7 @@ impl HqcGf2 {
         if i >= self.n {
             return false;
         }
-        let w = i / 64;
+        let w = i >> 6; // i / 64
         let b = i & 63; // i % 64
         (self.words[w] >> b) & 1 == 1
     }
@@ -60,7 +60,7 @@ impl HqcGf2 {
         if i >= self.n {
             return;
         }
-        let w = i / 64;
+        let w = i >> 6;
         let b = i & 63;
         self.words[w] |= 1u64 << b;
     }
@@ -83,14 +83,20 @@ impl HqcGf2 {
         debug_assert_eq!(dst.len(), m);
 
         dst.fill(0);
-        if n == 0 { return; }
-        if sh >= n { return; }
+        if n == 0 {
+            return;
+        }
+        if sh >= n {
+            return;
+        }
 
-        let wsh = sh / 64;
+        let wsh = sh >> 6;
         let bsh = sh & 63;
 
         for i in (0..m).rev() {
-            if i < wsh { continue; }
+            if i < wsh {
+                continue;
+            }
             let si = i - wsh;
 
             let mut v = self.words[si] << bsh;
@@ -114,15 +120,21 @@ impl HqcGf2 {
         debug_assert_eq!(dst.len(), m);
 
         dst.fill(0);
-        if n == 0 { return; }
-        if sh >= n { return; }
+        if n == 0 {
+            return;
+        }
+        if sh >= n {
+            return;
+        }
 
-        let wsh = sh / 64;
+        let wsh = sh >> 6;
         let bsh = sh & 63;
 
         for i in 0..m {
             let si = i + wsh;
-            if si >= m { break; }
+            if si >= m {
+                break;
+            }
 
             let mut v = self.words[si] >> bsh;
             if bsh != 0 && (si + 1) < m {
@@ -144,7 +156,9 @@ impl HqcGf2 {
         let m = Self::word_len(n);
         tmp.resize(m, 0);
 
-        if n == 0 { return; }
+        if n == 0 {
+            return;
+        }
         let s = sh % n;
         if s == 0 {
             dst.words.copy_from_slice(&self.words);
@@ -167,19 +181,25 @@ impl HqcGf2 {
     pub fn rotate_right_into(&self, sh: usize, dst: &mut Self, tmp: &mut Vec<u64>) {
         assert_eq!(self.n, dst.n, "length mismatch");
         let n = self.n;
-        if n == 0 { return; }
+        if n == 0 {
+            return;
+        }
         let s = sh % n;
         let left = if s == 0 { 0 } else { n - s };
         self.rotate_left_into(left, dst, tmp);
     }
 
     /// out ^= (self >>> shift)
-    pub fn xor_with_rotated_into(&self, shift: usize, out: &mut Self) {
-        assert_eq!(self.n, out.n, "length mismatch");
-        let mut tmp = HqcGf2::zero_with_len(self.n);
-        self.rotate_right_into(shift, &mut tmp, &mut Vec::new());
-        for (o, t) in out.words.iter_mut().zip(tmp.words.into_iter()) {
-            *o ^= t;
+    pub fn xor_with_rotated_into(
+        &self,
+        shift: usize,
+        out: &mut Self,
+        tmp_vec: &mut Vec<u64>,
+        tmp_gf2: &mut Self,
+    ) {
+        self.rotate_right_into(shift, tmp_gf2, tmp_vec);
+        for (o, t) in out.words.iter_mut().zip(tmp_gf2.words.iter()) {
+            *o ^= *t;
         }
         out.mask_tail();
     }
@@ -223,11 +243,12 @@ impl HqcGf2 {
         }
         out
     }
+
     pub fn truncate(&self, n_prime: usize) -> Self {
         assert!(n_prime <= self.n, "truncate length exceeds self.n");
         let m = Self::word_len(n_prime);
         let mut words = vec![0u64; m];
-        let full_words = n_prime / 64;
+        let full_words = n_prime >> 6;
         if full_words > 0 {
             words[..full_words].copy_from_slice(&self.words[..full_words]);
         }
@@ -240,6 +261,7 @@ impl HqcGf2 {
         obj.mask_tail();
         obj
     }
+
     pub fn to_bytes_le_bits(&self) -> Vec<u8> {
         let out_len = (self.n + 7) / 8;
         let mut out = vec![0u8; out_len];
@@ -250,6 +272,7 @@ impl HqcGf2 {
         }
         out
     }
+
     pub fn from_bytes_le_bits(n: usize, bytes: &[u8]) -> Self {
         let mut v = HqcGf2::zero_with_len(n);
         let need = (n + 7) / 8;
@@ -270,6 +293,61 @@ impl HqcGf2 {
         }
         v.mask_tail();
         v
+    }
+
+    /// Flip bit i (xor with 1 at position i).
+    #[inline(always)]
+    pub fn toggle(&mut self, i: usize) {
+        if i >= self.n {
+            return;
+        }
+        let w = i >> 6; // i / 64
+        let b = i & 63; // i % 64
+        self.words[w] ^= 1u64 << b;
+    }
+
+    /// Swap two bits inside this vector.
+    #[inline(always)]
+    pub fn swap_bits(&mut self, i: usize, j: usize) {
+        if i == j {
+            return;
+        }
+        let bi = self.get(i);
+        let bj = self.get(j);
+        if bi != bj {
+            self.toggle(i);
+            self.toggle(j);
+        }
+    }
+
+    /// Copy without realloc.
+    #[inline(always)]
+    pub fn copy_from_same_len(&mut self, other: &Self) {
+        assert_eq!(self.n, other.n, "length mismatch");
+        self.words.copy_from_slice(&other.words);
+        self.mask_tail();
+    }
+    /// Clear all bits to zero.
+    #[inline(always)]
+    pub fn clear_all(&mut self) {
+        self.words.fill(0);
+    }
+
+    /// Set bit i to 0.
+    #[inline(always)]
+    pub fn clear(&mut self, i: usize) {
+        if i >= self.n {
+            return;
+        }
+        let w = i >> 6;
+        let b = i & 63;
+        self.words[w] &= !(1u64 << b);
+    }
+
+    /// Set bit i to given value.
+    #[inline(always)]
+    pub fn set_to(&mut self, i: usize, val: bool) {
+        if val { self.set(i) } else { self.clear(i) }
     }
 }
 impl Gf2 for HqcGf2 {

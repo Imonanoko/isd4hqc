@@ -1,14 +1,14 @@
 use isd4hqc::isd::attack::Attack;
 use isd4hqc::isd::{
-    BruteForce,
+    Prange,
     params::HqcExperimentParams,
 };
 use isd4hqc::hqc::types::Seed32;
 fn main() {
     let seed_pke:Seed32 = [0u8; 32].into();
-    let params = HqcExperimentParams::sparse_parameters_hqc_1(3);
+    let params = HqcExperimentParams::sparse_parameters_hqc_3(4);
     let instance = params.keygen(seed_pke).unwrap();
-    let attack = BruteForce::new(None);
+    let attack = Prange::new(None, None);
     println!("Using attack: {}", attack.name());
     let (h, s) = instance.get_public_key();
     let (y, x) = instance.get_secret_key();

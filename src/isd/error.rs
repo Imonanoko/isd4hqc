@@ -30,4 +30,6 @@ pub enum AttackError {
     Failed,
     #[error("attack aborted: {0}")]
     Aborted(String),
+    #[error("invalid parameter: {0}")]
+    InvalidParameter(String),
 }
