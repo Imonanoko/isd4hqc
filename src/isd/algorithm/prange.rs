@@ -48,32 +48,32 @@ impl Attack for Prange {
             None => OsRng.next_u64(),
         };
         let mut rng = StdRng::seed_from_u64(seed);
-        let mut a_work: Vec<HqcGf2> = (0..n).map(|_| HqcGf2::zero_with_len(n)).collect();
-        let mut rhs_work = HqcGf2::zero_with_len(n);
+        let mut mat_rows: Vec<HqcGf2> = (0..n).map(|_| HqcGf2::zero_with_len(n)).collect();
+        let mut rhs = HqcGf2::zero_with_len(n);
         let mut col_buf = HqcGf2::zero_with_len(n);
         let mut tmp_words: Vec<u64> = vec![0u64; HqcGf2::word_len(n)];
         let mut perm: Vec<usize> = (0..2 * n).collect();
 
         for _ in 0..max_iters {
-            sample_cols_j_in_place(&mut rng, &mut perm, n);
-            let cols_j = &perm[..n];
-            fill_a_from_selected_columns_hqc(
+            sample_cols(&mut rng, &mut perm, n);
+            let cols = &perm[..n];
+            build_square_matrix_from_selected_columns(
                 n,
                 h,
-                cols_j,
-                &mut a_work,
+                cols,
+                &mut mat_rows,
                 &mut col_buf,
                 &mut tmp_words,
             );
-            rhs_work.copy_from_same_len(s);
-            if !gaussian_elimination_for_isd_instance(&mut a_work, &mut rhs_work) {
+            rhs.copy_from_same_len(s);
+            if !gaussian_elimination_for_isd_instance(&mut mat_rows, &mut rhs) {
                 continue;
             }
             let mut y = HqcGf2::zero_with_len(n);
             let mut x = HqcGf2::zero_with_len(n);
 
-            for (k, &orig_col) in cols_j.iter().enumerate() {
-                if rhs_work.get(k) {
+            for (k, &orig_col) in cols.iter().enumerate() {
+                if rhs.get(k) {
                     if orig_col < n {
                         y.set(orig_col);
                     } else {
