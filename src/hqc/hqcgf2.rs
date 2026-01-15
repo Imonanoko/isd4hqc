@@ -148,7 +148,8 @@ impl HqcGf2 {
         }
     }
 
-    /// dst = rotl_n(self, sh)  (cyclic rotate on n bits)
+    /// dst = rotl_n(self, sh)  (cyclic rotate on n bits) 
+    /// example: n=10, self=0000001111, sh=3 -> dst=0001111000
     #[inline]
     pub fn rotate_left_into(&self, sh: usize, dst: &mut Self, tmp: &mut Vec<u64>) {
         assert_eq!(self.n, dst.n, "length mismatch");

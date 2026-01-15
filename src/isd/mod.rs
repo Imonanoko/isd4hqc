@@ -3,4 +3,4 @@ pub mod params;
 pub mod attack;
 pub mod algorithm;
 pub use error::*;
-pub use algorithm::{brute_force::BruteForce, prange::Prange};
+pub use algorithm::{brute_force::BruteForce, prange::Prange, stern::Stern};

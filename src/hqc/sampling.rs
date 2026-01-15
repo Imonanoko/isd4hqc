@@ -28,7 +28,7 @@ pub(crate) fn sample_vect(n: usize, xof: &Shake256Xof) -> HqcGf2 {
 }
 
 #[inline]
-fn rand_bits(xof: &Shake256Xof) -> u32 {
+pub fn rand_bits(xof: &Shake256Xof) -> u32 {
     let b = xof.get_bytes(4);
     u32::from_le_bytes([b[0], b[1], b[2], b[3]])
 }
